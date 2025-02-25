@@ -35,9 +35,9 @@ jobs:
 
       - name: Extract IP addresses
         run: |
-          echo "Extracting IP addresses..."
-          cut -d ',' -f 2 data/latest.all.csv | tail -n +2 > data/tor_ips.txt  # ตัดเอาเฉพาะ IP address
-          rm data/latest.all.csv
+          echo "Extracting IPv4 addresses..."
+          cut -d ',' -f 2 data/latest.all.csv | tail -n +2 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' > data/tor_ips.txt  # ตัดเอาเฉพาะ IP address ที่เป็น IPv4
+          rm -rf data/latest.all.csv
 
       - name: Commit and push changes
         run: |
