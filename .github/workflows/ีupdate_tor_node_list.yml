@@ -1,0 +1,56 @@
+name: Update Tor Nodes IPs
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # รันทุก 6 ชั่วโมง
+  workflow_dispatch:  # อนุญาตให้เรียกใช้งานแบบแมนนวล
+  push:
+    branches: [ main ]  # เรียกใช้งานเมื่อมีการ push ไปยังสาขาหลัก
+
+permissions:
+  contents: write  # อนุญาตให้เขียนในรีโพซิทอรี
+
+jobs:
+  update-tor-nodes:
+    runs-on: ubuntu-latest  # กำหนดสภาพแวดล้อมในการรันงาน
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # ดึงประวัติทั้งหมดสำหรับทุกสาขา
+
+      - name: Download Tor Nodes
+        run: |
+          mkdir -p data
+          echo "Downloading Tor nodes data..."
+          curl -s https://raw.githubusercontent.com/alireza-rezaee/tor-nodes/refs/heads/main/latest.all.csv -o data/latest.all.csv
+
+          if [ -f "data/latest.all.csv" ]; then
+            echo "Download complete..."
+          else
+            echo "Download failed"
+            exit 1
+          fi
+
+      - name: Extract IP addresses
+        run: |
+          echo "Extracting IP addresses..."
+          cut -d ',' -f 2 data/latest.all.csv | tail -n +2 > data/tor_ips.txt  # ตัดเอาเฉพาะ IP address
+          rm data/latest.all.csv
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          echo "Checking for changes..."
+          if git status | grep -q "data/"; then
+            echo "Changes detected, committing..."
+            git add data/
+            git commit -m "Update Tor nodes IPs [automated]"
+            git push
+            echo "Changes pushed successfully"
+          else
+            echo "No changes to commit"
+          fi
